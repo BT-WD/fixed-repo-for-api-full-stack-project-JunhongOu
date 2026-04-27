@@ -117,9 +117,83 @@
       </div>
     </div>
     <script>
-      // Placeholder for future JavaScript functionality
-      document.getElementById('fetch-button').addEventListener('click', function() {
-        alert('Fetch functionality will be implemented here');
+      const API_URL = 'https://api.thecatapi.com/v1/images/search?limit=10';
+      const dataContainer = document.getElementById('data-container');
+      const fetchButton = document.getElementById('fetch-button');
+
+      // Function to display loading state
+      function showLoading() {
+        fetchButton.disabled = true;
+        fetchButton.textContent = 'Loading...';
+        console.log('Loading cat images...');
+      }
+
+      // Function to hide loading state
+      function hideLoading() {
+        fetchButton.disabled = false;
+        fetchButton.textContent = 'Get New Cats';
+      }
+
+      // Function to create a cat card element
+      function createCatCard(cat) {
+        const card = document.createElement('div');
+        card.className = 'cat-card';
+
+        const img = document.createElement('img');
+        img.src = cat.url;
+        img.alt = `Cat ${cat.id}`;
+        img.onerror = function() {
+          console.error('Failed to load image:', cat.url);
+          // Fallback to placeholder
+          card.innerHTML = '<div class="placeholder">Image failed to load</div>';
+        };
+
+        card.appendChild(img);
+        return card;
+      }
+
+      // Function to fetch and display cat images
+      async function fetchCats() {
+        showLoading();
+
+        try {
+          console.log('Fetching data from:', API_URL);
+          const response = await fetch(API_URL);
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const cats = await response.json();
+          console.log('Received data:', cats);
+
+          // Clear existing content
+          dataContainer.innerHTML = '';
+
+          // Create and append cat cards
+          cats.forEach(cat => {
+            const card = createCatCard(cat);
+            dataContainer.appendChild(card);
+          });
+
+          console.log(`Successfully displayed ${cats.length} cat images`);
+
+        } catch (error) {
+          console.error('Error fetching cat images:', error);
+          dataContainer.innerHTML = '<div class="cat-card"><div class="placeholder">Error loading cats. Please try again.</div></div>';
+          alert('Failed to load cat images. Check the console for details.');
+        } finally {
+          hideLoading();
+        }
+      }
+
+      // Event listener for the fetch button
+      fetchButton.addEventListener('click', fetchCats);
+
+      // Load initial cats on page load
+      document.addEventListener('DOMContentLoaded', function() {
+        console.log('Page loaded, fetching initial cat images...');
+        fetchCats();
       });
     </script>
   </body>
