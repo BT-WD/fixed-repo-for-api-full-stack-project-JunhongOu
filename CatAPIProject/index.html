@@ -76,6 +76,42 @@
         color: #666;
         font-size: 18px;
       }
+
+      .favorite-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: rgba(255, 255, 255, 0.8);
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        cursor: pointer;
+        font-size: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.3s;
+      }
+
+      .favorite-btn:hover {
+        background: rgba(255, 255, 255, 1);
+      }
+
+      .favorite-btn.favorited {
+        background: #ff6b6b;
+        color: white;
+      }
+
+      .cat-card {
+        position: relative;
+      }
+
+      h2 {
+        text-align: center;
+        color: #333;
+        margin: 40px 0 20px 0;
+      }
     </style>
   </head>
   <body>
@@ -116,10 +152,89 @@
         <div class="placeholder">Cat Image 10</div>
       </div>
     </div>
+
+    <h2>My Favorite Cats</h2>
+    <div id="favorites-container">
+      <div class="cat-card">
+        <div class="placeholder">No favorites yet. Click the heart on a cat to add it!</div>
+      </div>
+    </div>
     <script>
       const API_URL = 'https://api.thecatapi.com/v1/images/search?limit=10';
       const dataContainer = document.getElementById('data-container');
+      const favoritesContainer = document.getElementById('favorites-container');
       const fetchButton = document.getElementById('fetch-button');
+
+      // localStorage key for favorites
+      const FAVORITES_KEY = 'catFavorites';
+
+      // Get favorites from localStorage
+      function getFavorites() {
+        try {
+          const favorites = localStorage.getItem(FAVORITES_KEY);
+          return favorites ? JSON.parse(favorites) : [];
+        } catch (error) {
+          console.error('Error loading favorites:', error);
+          return [];
+        }
+      }
+
+      // Save favorites to localStorage
+      function saveFavorites(favorites) {
+        try {
+          localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
+          console.log('Favorites saved:', favorites);
+        } catch (error) {
+          console.error('Error saving favorites:', error);
+        }
+      }
+
+      // Check if a cat is favorited
+      function isFavorited(catId) {
+        const favorites = getFavorites();
+        return favorites.some(cat => cat.id === catId);
+      }
+
+      // Add cat to favorites
+      function addToFavorites(cat) {
+        const favorites = getFavorites();
+        if (!isFavorited(cat.id)) {
+          favorites.push(cat);
+          saveFavorites(favorites);
+          displayFavorites();
+          console.log('Added to favorites:', cat.id);
+        }
+      }
+
+      // Remove cat from favorites
+      function removeFromFavorites(catId) {
+        const favorites = getFavorites();
+        const updatedFavorites = favorites.filter(cat => cat.id !== catId);
+        saveFavorites(updatedFavorites);
+        displayFavorites();
+        console.log('Removed from favorites:', catId);
+      }
+
+      // Display favorites
+      function displayFavorites() {
+        const favorites = getFavorites();
+        favoritesContainer.innerHTML = '';
+
+        if (favorites.length === 0) {
+          const placeholder = document.createElement('div');
+          placeholder.className = 'cat-card';
+          placeholder.innerHTML = '<div class="placeholder">No favorites yet. Click the heart on a cat to add it!</div>';
+          favoritesContainer.appendChild(placeholder);
+          return;
+        }
+
+        favorites.forEach(cat => {
+          const card = createCatCard(cat, true); // true indicates it's a favorite
+          favoritesContainer.appendChild(card);
+        });
+
+        console.log(`Displayed ${favorites.length} favorite cats`);
+      }
 
       // Function to display loading state
       function showLoading() {
@@ -135,7 +250,7 @@
       }
 
       // Function to create a cat card element
-      function createCatCard(cat) {
+      function createCatCard(cat, isFavorite = false) {
         const card = document.createElement('div');
         card.className = 'cat-card';
 
@@ -144,11 +259,31 @@
         img.alt = `Cat ${cat.id}`;
         img.onerror = function() {
           console.error('Failed to load image:', cat.url);
-          // Fallback to placeholder
           card.innerHTML = '<div class="placeholder">Image failed to load</div>';
         };
 
+        const favoriteBtn = document.createElement('button');
+        favoriteBtn.className = 'favorite-btn';
+        favoriteBtn.innerHTML = '❤️';
+        favoriteBtn.title = isFavorite ? 'Remove from favorites' : 'Add to favorites';
+
+        if (isFavorited(cat.id)) {
+          favoriteBtn.classList.add('favorited');
+        }
+
+        favoriteBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          if (isFavorited(cat.id)) {
+            removeFromFavorites(cat.id);
+            favoriteBtn.classList.remove('favorited');
+          } else {
+            addToFavorites(cat);
+            favoriteBtn.classList.add('favorited');
+          }
+        });
+
         card.appendChild(img);
+        card.appendChild(favoriteBtn);
         return card;
       }
 
@@ -190,10 +325,11 @@
       // Event listener for the fetch button
       fetchButton.addEventListener('click', fetchCats);
 
-      // Load initial cats on page load
+      // Load initial cats and favorites on page load
       document.addEventListener('DOMContentLoaded', function() {
         console.log('Page loaded, fetching initial cat images...');
         fetchCats();
+        displayFavorites();
       });
     </script>
   </body>
