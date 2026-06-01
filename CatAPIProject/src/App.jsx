@@ -141,8 +141,12 @@ function App() {
         alt={`Cat ${cat.id}`}
         onError={(e) => {
           console.error('Failed to load image:', cat.url)
-          e.target.style.display = 'none'
-          e.target.nextSibling.style.display = 'flex'
+          const img = e.currentTarget
+          img.style.display = 'none'
+          const placeholder = img.nextElementSibling
+          if (placeholder instanceof HTMLElement) {
+            placeholder.style.display = 'flex'
+          }
         }}
       />
       <div className="placeholder" style={{ display: 'none' }}>
@@ -170,7 +174,7 @@ function App() {
             placeholder="Search by breeds (e.g., Persian, Siamese)"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyPress={handleKeyPress}
+            onKeyDown={handleKeyPress}
             className="search-input"
           />
           <button onClick={handleSearch} disabled={loading} className="search-btn">
